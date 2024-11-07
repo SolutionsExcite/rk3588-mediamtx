@@ -1,0 +1,221 @@
+## Commit message
+## opencl support working in dockerfile.  
+## running clinfo shows 3 opencl platforms loaded now that I included 
+## mali blob and firmware for opencl.
+
+FROM ubuntu:latest AS builder
+
+# Install dependencies to build FFmpeg with Rockchip HWA
+RUN apt-get update && apt-get install -y \
+    alsa-base \
+    alsa-utils \
+    autoconf \
+    automake \
+    build-essential \
+    clinfo \
+    cmake \
+    frei0r-plugins-dev \
+    git \
+    ladspa-sdk \
+    libaom-dev \
+    libass-dev \
+    libasound2-data \
+    libasound2-dev \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libbluray-dev \
+    libcaca-dev \
+    libcdio-dev \
+    libchromaprint-dev \
+    libcodec2-dev \
+    libdc1394-dev \
+    libdrm-dev \
+    libfdk-aac-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libfribidi-dev \
+    libgme-dev \
+    libglib2.0-dev \
+    libgnutls28-dev \
+    libgsm1-dev \
+    libgsl-dev \
+    libiec61883-dev \
+    libjack-jackd2-dev \
+    libjpeg-dev \
+    libmp3lame-dev \
+    libmysofa-dev \
+    libnm-dev \
+    libopenal-dev \
+    libopenjp2-7-dev \
+    libopus-dev \
+    librabbitmq-dev \
+    librsvg2-dev \
+    librubberband-dev \
+    libsdl2-dev \
+    libsnappy-dev \
+    libspeexdsp-dev \
+    libssl-dev \
+    libsvtav1-dev \
+    libtheora-dev \
+    libtiff-dev \
+    libtool \
+    libtwolame-dev \
+    libv4l-dev \
+    libva-dev \
+    libvdpau-dev \
+    libvorbis-dev \
+    libvpx-dev \
+    libwebp-dev \
+    libx264-dev \
+    libx265-dev \
+    libxcb-shm0-dev \
+    libxcb-xfixes0-dev \
+    libxcb1-dev \
+    libxvidcore-dev \
+    libzmq3-dev \
+    libzvbi-dev \
+    meson \
+    nasm \
+    ninja-build \
+    pkg-config \
+    texinfo \
+    wget \
+    yasm \
+    zlib1g-dev \
+    liblilv-dev \
+    libbs2b-dev \
+    libdav1d-dev \
+    git-core \
+    libopenmpt-dev \
+    libshine-dev \
+    libsvtav1enc-dev \
+    libvidstab-dev \
+    libpocketsphinx-dev \
+    libcdio-paranoia-dev \
+    ocl-icd-libopencl1 \
+    ocl-icd-opencl-dev \
+    opencl-headers \
+    libglu1-mesa-dev \
+    mesa-utils \
+    libgl1-mesa-dri \
+    libxcb-dri2-0 \
+    libxcb-dri3-0 \
+    libwayland-client0 \
+    libwayland-server0 \
+    libx11-xcb1 \
+    mesa-opencl-icd
+
+RUN cd /usr/lib && \
+    wget https://github.com/JeffyCN/mirrors/raw/libmali/lib/aarch64-linux-gnu/libmali-valhall-g610-g6p0-x11-wayland-gbm.so
+RUN cd /lib/firmware && \
+    wget https://github.com/JeffyCN/mirrors/raw/libmali/firmware/g610/mali_csffw.bin
+
+
+RUN mkdir -p /etc/OpenCL/vendors && \
+    echo "/usr/lib/libmali-valhall-g610-g6p0-x11-wayland-gbm.so" \
+    | tee /etc/OpenCL/vendors/mali.icd 
+
+# add srt support
+RUN git clone https://github.com/Haivision/srt.git && \
+	cd srt && mkdir build && \
+	cd build && cmake .. \
+	-DCMAKE_INSTALL_PREFIX=/usr/local \
+	-DENABLE_ENCRYPTION=ON \
+	-DENABLE_LOGGING=ON && \
+	make -j$(nproc) && \
+	make install -j$(nproc)
+
+# build rkmpp
+WORKDIR /build
+RUN git clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp
+WORKDIR /build/rkmpp/build
+RUN cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_TEST=OFF ..
+RUN make -j$(nproc) && make install
+
+# Clone and build RGA (Raster Graphics Acceleration)
+WORKDIR /build
+RUN git clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga
+WORKDIR /build/rkrga
+RUN meson setup build --prefix=/usr --libdir=lib --buildtype=release --default-library=shared -Dcpp_args=-fpermissive
+RUN meson configure build && ninja -C build install
+
+# Clone and build FFmpeg with Rockchip hardware acceleration --enable-openal \
+WORKDIR /build
+RUN git clone --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
+WORKDIR /build/ffmpeg
+RUN ./configure --prefix="/usr/local" \
+    --disable-stripping \
+    --disable-ptx-compression \
+    --disable-omx \
+    --enable-gpl \
+    --enable-version3 \
+    --enable-nonfree \
+    --enable-libass \
+    --enable-libbs2b \
+    --enable-libbluray \
+    --enable-libcaca \
+    --enable-libcdio \
+    --enable-libcodec2 \
+    --enable-libdav1d \
+    --enable-libdrm \
+    --enable-libfdk-aac \
+    --enable-libfreetype \
+    --enable-libfribidi \
+    --enable-libgme \
+    --enable-libgsm \
+    --enable-libharfbuzz \
+    --enable-libjack \
+    --enable-libmysofa \
+    --enable-libopenjpeg \
+    --enable-libopenmpt \
+    --enable-librabbitmq \
+    --enable-librsvg \
+    --enable-librubberband \
+    --enable-libshine \
+    --enable-libsnappy \
+    --enable-libsvtav1 \
+    --enable-libtheora \
+    --enable-libtwolame \
+    --enable-libvidstab \
+    --enable-libvorbis \
+    --enable-libvpx \
+    --enable-libx264 \
+    --enable-libx265 \
+    --enable-libxvid \
+    --enable-libaom \
+    --enable-libwebp \
+    --enable-lv2 \
+    --enable-openssl \
+    --enable-pocketsphinx \
+    --enable-sdl2 \
+    --enable-rkmpp \
+    --enable-rkrga \
+    --enable-shared \
+    --enable-chromaprint \
+    --enable-frei0r \
+    --disable-vulkan \
+    --enable-opencl \
+    --enable-opengl \
+    --enable-openal \
+    --disable-ptx-compression \
+    --enable-libsrt \
+    --enable-lto \
+    --enable-hardcoded-tables \
+    --disable-schannel \
+    --disable-securetransport \
+    --extra-cflags="-I/usr/local/include -fPIC" \
+    --extra-ldflags="-L/usr/local/lib" \
+    --extra-libs="-lpthread -lm -latomic" \
+    --enable-runtime-cpudetect
+
+RUN make -j$(nproc) && make install
+
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+#Set library path
+ENV LD_LIBRARY_PATH="/usr/local/lib:/usr/lib:$LD_LIBRARY_PATH"
+
+CMD ["/bin/bash"]
+
+

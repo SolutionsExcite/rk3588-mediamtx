@@ -1,0 +1,59 @@
+# docker build -t mediamtx-hwa -f Dockerfile .
+FROM ffmpeg-hwa-test AS ffmpeg_stage
+
+# Stage 2: Build MediaMTX
+FROM bluenviron/mediamtx:latest AS mediamtx-builder
+
+# Copy the custom-built FFmpeg binary from the ffmpeg-hwa image
+COPY --from=ffmpeg_stage /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=ffmpeg_stage /usr/local/bin/ffplay /usr/local/bin/ffplay
+COPY --from=ffmpeg_stage /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+
+# copy of ffmpeg, rkrga, and rkmpp libs
+COPY --from=ffmpeg_stage /usr/local/lib/ /usr/local/lib/
+COPY --from=ffmpeg_stage /usr/lib/ /usr/lib/
+
+# copy of ffmpeg, ffmpeg_stage, and rkmpp libs
+COPY --from=ffmpeg_stage /usr/local/include/ /usr/local/include/
+COPY --from=ffmpeg_stage /usr/include/ /usr/include/
+
+
+###################################
+##################################
+# Stage 3: Final Image
+FROM ubuntu:latest AS mediamtx-hwa
+
+# Set environment variables
+ENV FFMPEG_DIR=/usr/local
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib/aarch64-linux-gnu
+
+# Install MediaMTX
+COPY --from=mediamtx-builder /mediamtx /mediamtx
+# Copy the custom-built FFmpeg binary from the ffmpeg-hwa image
+COPY --from=mediamtx-builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=mediamtx-builder /usr/local/bin/ffplay /usr/local/bin/ffplay
+COPY --from=mediamtx-builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+# copy of ffmpeg, rkrga, and rkmpp libs
+COPY --from=mediamtx-builder /usr/local/lib/ /usr/local/lib/
+COPY --from=mediamtx-builder /usr/lib/ /usr/lib/
+# copy of ffmpeg, ffmpeg_stage, and rkmpp libs
+COPY --from=mediamtx-builder /usr/local/include/ /usr/local/include/
+COPY --from=mediamtx-builder /usr/include/ /usr/include/
+
+
+# Install any additional dependencies needed for FFmpeg and MediaMTX
+RUN apt-get update && apt-get install -y \
+    libdrm2 \
+    libjpeg-turbo8-dev \
+    alsa-base \
+    alsa-utils \
+    libasound2-data \
+    libblas3 \
+    liblapack3 \
+    && ldconfig
+
+# Verify that the FFmpeg binary is properly linked and has access to the necessary libraries
+RUN ffmpeg -version && ffmpeg -hwaccels
+
+# Default CMD to start MediaMTX
+CMD ["/mediamtx"]
