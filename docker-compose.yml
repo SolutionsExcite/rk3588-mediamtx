@@ -1,0 +1,38 @@
+services:
+
+  mediamtx-server:
+    privileged: true
+    image: mediamtx-hwa-test
+    container_name: rk3588-mediamtx
+    environment:
+      - XDG_RUNTIME_DIR=/run/user/1000
+      - SDL_VIDEODRIVER=x11
+      - SDL_AUDIODRIVER=alsa
+    ports:
+      - 9999:8554 # expose on diff port for testing
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./mediamtx.yml:/mediamtx.yml
+      - /usr/share/alsa:/usr/share/alsa
+    restart: always
+
+#networks:
+#  internal_network:
+#    driver: bridge
+
+
+#devices:
+#  - /dev/dri/dev/dri
+#  - /dev/dma_heap:/dev/dma_heap
+#  - /dev/mali0:/dev/mali0
+#  - /dev/mpp_service:/dev/mpp_service
+#  - /dev/rga:/dev/rga
+#  - /dev/snd/dev/snd
+
+
+#- '/dev/dri:/dev/dri'
+#      - '/dev/dma_heap:/dev/dma_heap'
+#      - '/dev/mali0:/dev/mali0'
+#      - '/dev/rga:/dev/rga'
+#      - '/dev/mpp_service:/dev/mpp_service'
+#      - '/dev/sns:/swv/snd'

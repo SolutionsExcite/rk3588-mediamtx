@@ -5,6 +5,87 @@
 
 FROM ubuntu:latest AS builder
 
+# Update and install necessary packages
+#RUN apt-get update && apt-get install -y sudo \
+#    && apt-get install -y \
+#    autoconf \
+#    automake \
+#    build-essential \
+#    cmake \
+#    git \
+#    libass-dev \
+#    libfreetype6-dev \
+#    libgnutls28-dev \
+#    libmp3lame-dev \
+#    libsdl2-dev \
+#    libtool \
+#    libva-dev \
+#    libvdpau-dev \
+#    libvorbis-dev \
+#    libxcb1-dev \
+#    libxcb-shm0-dev \
+#    libxcb-xfixes0-dev \
+#    meson \
+#    ninja-build \
+#    pkg-config \
+#    texinfo \
+#    wget \
+#    yasm \
+#    zlib1g-dev \
+#   # libfdk-aac-dev \
+#    libdrm-dev \
+#    libx264-dev \
+#    libx265-dev
+#
+## Build MPP
+#RUN mkdir -p ~/dev && cd ~/dev \
+#    && git clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp \
+#    && mkdir -p rkmpp/rkmpp_build \
+#    && cd rkmpp/rkmpp_build \
+#    && cmake \
+#        -DCMAKE_INSTALL_PREFIX=/usr \
+#        -DCMAKE_BUILD_TYPE=Release \
+#        -DBUILD_SHARED_LIBS=ON \
+#        -DBUILD_TEST=OFF \
+#        .. \
+#    && make -j $(nproc) \
+#    && make install
+#
+## Build RGA
+#RUN mkdir -p ~/dev && cd ~/dev \
+#    && git clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga \
+#    && meson setup rkrga rkrga_build \
+#        --prefix=/usr \
+#        --libdir=lib \
+#        --buildtype=release \
+#        --default-library=shared \
+#        -Dcpp_args=-fpermissive \
+#        -Dlibdrm=false \
+#        -Dlibrga_demo=false \
+#    && meson configure rkrga_build \
+#    && ninja -C rkrga_build install
+#
+## Build FFmpeg
+#RUN mkdir -p ~/dev && cd ~/dev \
+#    && git clone --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg \
+#    && cd ffmpeg \
+#    && ./configure --prefix=/usr \
+#        --enable-gpl \
+#        --enable-version3 \
+#        --enable-libdrm \
+#        --enable-rkmpp \
+#        --enable-rkrga \
+#        --enable-libx264 \
+#        --enable-libx265 \
+#        #--enable-libfdk-aac \
+#        --enable-libass \
+#        --enable-nonfree \
+#    && make -j $(nproc) \
+#    && make install
+
+
+
+
 # Install dependencies to build FFmpeg with Rockchip HWA
 RUN apt-get update && apt-get install -y \
     alsa-base \

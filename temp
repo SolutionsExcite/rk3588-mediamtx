@@ -1,0 +1,8 @@
+
+
+
+ffmpeg \
+    -hwaccel rkmpp \
+    -i /dev/video0 \
+    -c:v h264_rkmpp \
+    -f rtsp rtsp://localhost:8554/hdmi-feed
