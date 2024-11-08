@@ -709,7 +709,7 @@ paths:
     runOnReadyRestart: yes
   hdmi-feed/live:
     source: publisher
-  # rtsp://device-ip:9999/hdmi-feed/live
+  # rtsp://device-ip:8554/hdmi-feed/live
   
 
   # Settings under path "all_others" are applied to all paths that

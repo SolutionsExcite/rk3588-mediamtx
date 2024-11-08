@@ -9,7 +9,7 @@ services:
       - SDL_VIDEODRIVER=x11
       - SDL_AUDIODRIVER=alsa
     ports:
-      - 9999:8554 # expose on diff port for testing
+      - 8554:8554 # expose on diff port for testing
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./mediamtx.yml:/mediamtx.yml
