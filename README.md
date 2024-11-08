@@ -1,3 +1,5 @@
+(currently hdmi rx is not working.  Random stops, and other issues that may be related to drivers.  It does not like what is coming from hdmi rx.)
+
 
 To setup and build the entire project, run scripts/build.sh
 
